@@ -89,7 +89,7 @@ bool makeWindow(HINSTANCE &hInstance, WNDCLASSEX &window, HWND &handle, Menu &me
 	return handle != NULL;
 }
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow )
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	WNDCLASSEX window;
 	HWND handle;
