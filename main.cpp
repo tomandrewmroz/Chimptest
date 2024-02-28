@@ -2,6 +2,8 @@
 #include <cstdlib>
 #include <ctime>
 
+int pressedButton = 0;
+
 LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     switch(msg)
@@ -15,7 +17,8 @@ LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
         break;
     
     case WM_COMMAND:
-    	MessageBox(NULL, "Button Pressed!", "BUTTON nr: ", MB_ICONEXCLAMATION);
+    	pressedButton = wParam;
+    	break;
     
     default:
         return DefWindowProc(hwnd, msg, wParam, lParam);
@@ -28,17 +31,22 @@ const int lineX = 25, lineY = 25, buttonX = 100, buttonY = 100;
 
 struct Menu{
 	const char* title = "Chimptest";
-	int level, *space, spaces, seed;
-	HWND *buttons;
-	Menu(){
-		level = 1;	
+	int level, *space, spaces, seed, restOfButtons;
+	HWND *buttons, *handle;
+	HINSTANCE *hInstance;
+	Menu(HWND &handle, HINSTANCE &hInstance){
+		this->handle = &handle;
+		this->hInstance = &hInstance;
+		level = 0;	
+		restOfButtons = 0;
 		buttons = new HWND[36];	
 		space = new int[36];
 		spaces = 0;
 		seed = time(NULL);
 		srand(seed);
 	}
-	bool addButton(HWND &handle, HINSTANCE &hInstance){
+	
+	bool addButton(){
 		if(level <= spaces) return false;
 		seed = seed * seed % 10000;
 		srand(seed);
@@ -64,8 +72,32 @@ struct Menu{
 		}
 		
 		int row = current / 6, column = current % 6;
-		buttons[spaces - 1] = CreateWindowEx(0, "BUTTON", "", WS_CHILD | WS_VISIBLE, lineX * (column + 1) + buttonX * column, lineY * (row + 1) + buttonY * row, buttonX, buttonY, handle, NULL, hInstance, NULL);
+		buttons[spaces - 1] = CreateWindowEx(0, "BUTTON", "", WS_CHILD | WS_VISIBLE, lineX * (column + 1) + buttonX * column, lineY * (row + 1) + buttonY * row, buttonX, buttonY, *handle, (HMENU)(200 + spaces), *hInstance, NULL);
 	}
+	
+	void checkButton(){
+		if(!(::pressedButton)) return;
+		
+		int pressedButton = ::pressedButton - 200;
+		::pressedButton = 0;
+		
+		if(pressedButton == level - restOfButtons + 1){
+			restOfButtons--;
+			if(restOfButtons == 0) nextLevel();
+		}
+	}
+	
+	void restoreButtons(){
+		
+	}
+	
+	void nextLevel(){
+		restoreButtons();
+		level++;
+		restOfButtons = level;
+		addButton();
+	}
+	
 };
 
 bool makeWindow(HINSTANCE &hInstance, WNDCLASSEX &window, HWND &handle, Menu &menu)
@@ -100,7 +132,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 {
 	WNDCLASSEX window;
 	HWND handle;
-	Menu menu;
+	Menu menu(handle, hInstance);
 	MSG message;
 	
 	HANDLE appOpenedMutex = CreateMutex(NULL, FALSE, "appOpenedMutex");
@@ -109,19 +141,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	if(makeWindow(hInstance, window, handle, menu)){
 		ShowWindow(handle, nCmdShow);
 		
-		menu.level = 20;
-		for(int i = menu.spaces; i < menu.level; i++)
-			menu.addButton(handle, hInstance);
+		menu.nextLevel();
+		
 		while(GetMessage(&message, NULL, 0, 0)){
-			/*LPWSTR kupa = (LPWSTR)malloc(30);
-			_itow(message.message, kupa, 10);
-			char const* dupa = kupa.c_str();
-			MessageBox(NULL, dupa, "KUPA", 29);*/
-			//Sleep(2500);
+			
 		    UpdateWindow(handle);
 		    TranslateMessage(&message);
 		    DispatchMessage(&message);
 		    
+		    menu.checkButton();
 		}
 	    return message.wParam;
 	}
