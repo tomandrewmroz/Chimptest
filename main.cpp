@@ -13,7 +13,10 @@ LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
     case WM_DESTROY:
         PostQuitMessage(0);
         break;
-       
+    
+    case WM_COMMAND:
+    	MessageBox(NULL, "Button Pressed!", "BUTTON nr: ", MB_ICONEXCLAMATION);
+    
     default:
         return DefWindowProc(hwnd, msg, wParam, lParam);
     }
@@ -80,11 +83,15 @@ bool makeWindow(HINSTANCE &hInstance, WNDCLASSEX &window, HWND &handle, Menu &me
 	window.lpszClassName = menu.title;
 	window.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
 	
+	if(FindWindow(window.lpszClassName, NULL)){
+		PostQuitMessage(0);
+		return false;
+	}
 	if(!RegisterClassEx(&window)) return false;
 	
 	const int X = CW_USEDEFAULT, Y = CW_USEDEFAULT, sizeX = 8 * lineX + 6 * buttonX - 5, sizeY = 9 * lineY + 6 * buttonY;
 	
-	handle = CreateWindowEx(WS_EX_CLIENTEDGE, menu.title, menu.title, WS_OVERLAPPEDWINDOW, X, Y, sizeX, sizeY, NULL, NULL, hInstance, NULL);
+	handle = CreateWindowEx(WS_EX_CLIENTEDGE, menu.title, menu.title, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX, X, Y, sizeX, sizeY, NULL, NULL, hInstance, NULL);
 	
 	return handle != NULL;
 }
@@ -96,21 +103,27 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	Menu menu;
 	MSG message;
 	
+	HANDLE appOpenedMutex = CreateMutex(NULL, FALSE, "appOpenedMutex");
+	if(appOpenedMutex && GetLastError()) return 0;
+	
 	if(makeWindow(hInstance, window, handle, menu)){
 		ShowWindow(handle, nCmdShow);
 		
 		menu.level = 20;
-		for(int i = 0; i < 20; i++)
+		for(int i = menu.spaces; i < menu.level; i++)
 			menu.addButton(handle, hInstance);
-		
 		while(GetMessage(&message, NULL, 0, 0)){
-			
+			/*LPWSTR kupa = (LPWSTR)malloc(30);
+			_itow(message.message, kupa, 10);
+			char const* dupa = kupa.c_str();
+			MessageBox(NULL, dupa, "KUPA", 29);*/
+			//Sleep(2500);
 		    UpdateWindow(handle);
 		    TranslateMessage(&message);
 		    DispatchMessage(&message);
 		    
 		}
-	    return message.wParam;	
+	    return message.wParam;
 	}
 	else{
 		MessageBox(NULL, "Bug happened!", "ERROR", MB_ICONEXCLAMATION);
