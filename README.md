@@ -1,2 +1,2 @@
 # Chimptest
-Interactive game in a form of desktop application form
+Interactive game as a desktop application form
